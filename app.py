@@ -1,59 +1,62 @@
 import streamlit as st
-import numpy as np
-import pickle
 import requests
+import pickle
+import pandas as pd
 
-# Load the model
+# === Load your trained model ===
 model = pickle.load(open('outage_model.pkl', 'rb'))
 
-# Get weather data from OpenWeatherMap
-def get_weather(town, api_key):
-    try:
-        url = f"https://api.openweathermap.org/data/2.5/weather?q={town}&appid={api_key}&units=metric"
-        response = requests.get(url)
-        data = response.json()
-        if data["cod"] != 200:
-            return None
+# === Your OpenWeatherMap API Key ===
+API_KEY = "your_actual_api_key_here"
 
+st.set_page_config(page_title="Electricity Outage Predictor", page_icon="⚡")
+st.title("⚡ Electricity Outage Prediction in Indian Towns")
+st.write("📍 Enter any Indian city, town or village to check power outage prediction based on live weather conditions.")
+
+# === User Input for Town ===
+town = st.text_input("🏙️ Enter town / city / village name (India)", "")
+
+if town:
+    # === Build OpenWeatherMap API URL ===
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={town},IN&appid={API_KEY}&units=metric"
+
+    # === Fetch weather data ===
+    response = requests.get(url)
+    data = response.json()
+
+    if data["cod"] != 200:
+        st.error("❌ Town not found. Please check the spelling and try again.")
+    else:
+        # === Extract weather data ===
         temperature = data["main"]["temp"]
         humidity = data["main"]["humidity"]
         wind_speed = data["wind"]["speed"]
-        rainfall = data.get("rain", {}).get("1h", 0)  # Rain in last hour
+        rainfall = data.get("rain", {}).get("1h", 0)  # default to 0 if missing
 
-        return temperature, humidity, rainfall, wind_speed
-    except:
-        return None
+        # === Display weather data ===
+        st.markdown("### 🌦️ Live Weather Info")
+        st.write(f"🌡️ Temperature: **{temperature}°C**")
+        st.write(f"💧 Humidity: **{humidity}%**")
+        st.write(f"🌧️ Rainfall (last 1hr): **{rainfall} mm**")
+        st.write(f"🌬️ Wind Speed: **{wind_speed} km/h**")
 
-# Streamlit UI
-st.set_page_config(page_title="Electricity Outage Predictor")
-st.title("⚡ Electricity Outage Prediction by Town Name")
+        # === Simulated Extra Inputs ===
+        st.markdown("### 🧮 Additional Info (Simulated)")
+        past_outages = st.slider("📊 Number of past outages (last 30 days)", 0, 10, 2)
+        population_density = st.slider("👥 Population Density (people per sq km)", 100, 2000, 800)
 
-town = st.text_input("Enter Town Name (e.g., Vijayawada, Guntur, etc.)")
+        # === Prepare input for model ===
+        input_data = pd.DataFrame([[temperature, humidity, rainfall, wind_speed, past_outages, population_density]],
+                                  columns=["Temperature", "Humidity", "Rainfall", "Wind Speed", "Past Outages", "Population Density"])
 
-if st.button("Predict Outage"):
-    API_KEY = "7e3b3a1fb759df9356859b79fb919d9c"  # Replace with your actual OpenWeatherMap API key
-    weather = get_weather(town, API_KEY)
+        # === Predict outage ===
+        prediction = model.predict(input_data)[0]
+        confidence = max(model.predict_proba(input_data)[0]) * 100
 
-    if weather:
-        temperature, humidity, rainfall, wind_speed = weather
-
-        # Use fixed or estimated values for remaining features
-        past_outages = 2  # You can use logic or keep it fixed for now
-        population_density = 1000  # Just an assumption
-
-        features = np.array([[temperature, humidity, rainfall, wind_speed, past_outages, population_density]])
-        result = model.predict(features)
-
-        st.subheader("Town Weather Info:")
-        st.write(f"🌡️ Temperature: {temperature} °C")
-        st.write(f"💧 Humidity: {humidity} %")
-        st.write(f"🌧️ Rainfall: {rainfall} mm")
-        st.write(f"💨 Wind Speed: {wind_speed} km/h")
-
-        if result[0] == 1:
-            st.error("⚠️ Power Outage Expected!")
+        st.markdown("### 🔍 Prediction Result")
+        if prediction == 1:
+            st.error("⚠️ Power Outage Expected")
         else:
             st.success("✅ No Power Outage Expected")
 
-    else:
-        st.error("❌ Unable to fetch weather data. Check town name or API key.")
+        st.info(f"🧠 Model Confidence: **{confidence:.2f}%**")
