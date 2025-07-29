@@ -7,7 +7,7 @@ import pandas as pd
 model = pickle.load(open('outage_model.pkl', 'rb'))
 
 # === Your OpenWeatherMap API Key ===
-API_KEY = "your_actual_api_key_here"
+API_KEY = "9ec898ed86ffafa9f14138eade261bf0"
 
 st.set_page_config(page_title="Electricity Outage Predictor", page_icon="⚡")
 st.title("⚡ Electricity Outage Prediction in Indian Towns")
