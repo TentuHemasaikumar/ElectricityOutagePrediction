@@ -22,38 +22,38 @@ if st.button("🔍 Predict Outage"):
     if not town.strip():
         st.warning("⚠️ Please enter a valid town name.")
     else:
-        # === Build API Request URL ===
+        # === Build API URL ===
         url = f"https://api.openweathermap.org/data/2.5/weather?q={town},IN&appid={API_KEY}&units=metric"
 
-        # === Make API Call ===
+        # === Make API Request ===
         response = requests.get(url)
         data = response.json()
 
         if data["cod"] != 200:
             st.error("❌ Town not found. Please check the spelling and try again.")
         else:
-            # === Extract Weather Info ===
+            # === Extract Weather Features ===
             temperature = data["main"]["temp"]
             humidity = data["main"]["humidity"]
             wind_speed = data["wind"]["speed"]
-            rainfall = data.get("rain", {}).get("1h", 0)  # default to 0 if missing
+            rainfall = data.get("rain", {}).get("1h", 0)  # Default to 0 mm
 
-            # === Show Live Weather Info ===
+            # === Display Weather Info ===
             st.markdown("### 🌦️ Live Weather Info")
             st.write(f"🌡️ Temperature: **{temperature}°C**")
             st.write(f"💧 Humidity: **{humidity}%**")
             st.write(f"🌧️ Rainfall (last 1hr): **{rainfall} mm**")
             st.write(f"🌬️ Wind Speed: **{wind_speed} km/h**")
 
-            # === Prepare Data for Model ===
+            # === Prepare input for model ===
             input_data = pd.DataFrame([[temperature, humidity, rainfall, wind_speed]],
                                       columns=["Temperature", "Humidity", "Rainfall", "Wind Speed"])
 
-            # === Make Prediction ===
+            # === Predict outage ===
             prediction = model.predict(input_data)[0]
             confidence = max(model.predict_proba(input_data)[0]) * 100
 
-            # === Show Prediction Result ===
+            # === Show Result ===
             st.markdown("### 🔍 Prediction Result")
             if prediction == 1:
                 st.error("⚠️ Power Outage Expected")
