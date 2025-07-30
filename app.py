@@ -45,10 +45,10 @@ if st.button("🔍 Predict Outage"):
             st.write(f"🌧️ Rainfall (last 1hr): **{rainfall} mm**")
             st.write(f"🌬️ Wind Speed: **{wind_speed} km/h**")
 
-            # === Simulated Dropdown Inputs ===
-            st.markdown("### 🧮 Additional Info (Fixed Options Only)")
-            past_outages = st.selectbox("📊 Number of past outages (last 30 days)", options=list(range(0, 11)), index=2)
-            population_density = st.selectbox("👥 Population Density (people per sq km)", options=[100, 300, 500, 800, 1000, 1200, 1500, 2000], index=3)
+            # === Simulated Inputs ===
+            st.markdown("### 🧮 Additional Info ")
+            past_outages = st.slider("📊 Number of past outages (last 30 days)", 0, 10, 2)
+            population_density = st.slider("👥 Population Density (people per sq km)", 100, 2000, 800)
 
             # === Prepare input for model ===
             input_data = pd.DataFrame([[temperature, humidity, rainfall, wind_speed, past_outages, population_density]],
