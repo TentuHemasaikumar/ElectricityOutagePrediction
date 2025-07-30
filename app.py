@@ -1,3 +1,4 @@
+[media pointer="file-service://file-7MXMrpijuNW3e8fyDujqSh"]
 import streamlit as st
 import requests
 import pickle
@@ -16,54 +17,47 @@ st.write("📍 Enter any Indian city, town or village to check power outage pred
 # === User Input for Town ===
 town = st.text_input("🏙️ Enter town / city / village name (India)", "")
 
-# === Input for past outages (not a slider) ===
-past_outages = st.number_input("📊 Enter number of past outages in last 30 days", min_value=0, max_value=30, step=1)
+if town:
+    # === Build OpenWeatherMap API URL ===
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={town},IN&appid={API_KEY}&units=metric"
 
-# === Predict Button ===
-if st.button("🔍 Predict Outage"):
-    if town.strip() == "":
-        st.warning("⚠️ Please enter a town or city name.")
+    # === Fetch weather data ===
+    response = requests.get(url)
+    data = response.json()
+
+    if data["cod"] != 200:
+        st.error("❌ Town not found. Please check the spelling and try again.")
     else:
-        # === Build OpenWeatherMap API URL ===
-        url = f"https://api.openweathermap.org/data/2.5/weather?q={town},IN&appid={API_KEY}&units=metric"
+        # === Extract weather data ===
+        temperature = data["main"]["temp"]
+        humidity = data["main"]["humidity"]
+        wind_speed = data["wind"]["speed"]
+        rainfall = data.get("rain", {}).get("1h", 0)  # default to 0 if missing
 
-        # === Fetch weather data ===
-        response = requests.get(url)
-        data = response.json()
+        # === Display weather data ===
+        st.markdown("### 🌦️ Live Weather Info")
+        st.write(f"🌡️ Temperature: **{temperature}°C**")
+        st.write(f"💧 Humidity: **{humidity}%**")
+        st.write(f"🌧️ Rainfall (last 1hr): **{rainfall} mm**")
+        st.write(f"🌬️ Wind Speed: **{wind_speed} km/h**")
 
-        if data["cod"] != 200:
-            st.error("❌ Town not found. Please check the spelling and try again.")
+        # === Simulated Extra Inputs ===
+        st.markdown("### 🧮 Additional Info (Simulated)")
+        past_outages = st.slider("📊 Number of past outages (last 30 days)", 0, 10, 2)
+        population_density = st.slider("👥 Population Density (people per sq km)", 100, 2000, 800)
+
+        # === Prepare input for model ===
+        input_data = pd.DataFrame([[temperature, humidity, rainfall, wind_speed, past_outages, population_density]],
+                                  columns=["Temperature", "Humidity", "Rainfall", "Wind Speed", "Past Outages", "Population Density"])
+
+        # === Predict outage ===
+        prediction = model.predict(input_data)[0]
+        confidence = max(model.predict_proba(input_data)[0]) * 100
+
+        st.markdown("### 🔍 Prediction Result")
+        if prediction == 1:
+            st.error("⚠️ Power Outage Expected")
         else:
-            # === Extract weather data ===
-            temperature = data["main"]["temp"]
-            humidity = data["main"]["humidity"]
-            wind_speed = data["wind"]["speed"]
-            rainfall = data.get("rain", {}).get("1h", 0)  # default to 0 if missing
+            st.success("✅ No Power Outage Expected")
 
-            # === Display weather data ===
-            st.markdown("### 🌦️ Live Weather Info")
-            st.write(f"🌡️ Temperature: **{temperature}°C**")
-            st.write(f"💧 Humidity: **{humidity}%**")
-            st.write(f"🌧️ Rainfall (last 1hr): **{rainfall} mm**")
-            st.write(f"🌬️ Wind Speed: **{wind_speed} km/h**")
-
-            # === Prepare input for model ===
-            input_data = pd.DataFrame([[temperature, humidity, rainfall, wind_speed, past_outages]],
-                                      columns=["Temperature", "Humidity", "Rainfall", "Wind Speed", "Past Outages"])
-
-            # === Predict outage ===
-            prediction = model.predict(input_data)[0]
-            confidence = max(model.predict_proba(input_data)[0]) * 100
-
-            # === Display prediction ===
-            st.markdown("### 🔍 Prediction Result")
-            if prediction == 1:
-                st.error("⚠️ Power Outage Expected")
-            else:
-                st.success("✅ No Power Outage Expected")
-
-            st.info(f"🧠 Model Confidence: **{confidence:.2f}%**")
-
-            # === Show Additional Info at Bottom ===
-            st.markdown("### 🧮 Additional Info (Simulated)")
-            st.write(f"📊 Number of past outages (last 30 days): **{past_outages}**")
+        st.info(f"🧠 Model Confidence: **{confidence:.2f}%**") 
