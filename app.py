@@ -59,4 +59,4 @@ if town:
         else:
             st.success("✅ No Power Outage Expected")
 
-        st.info(f"🧠 Model Confidence: **{confidence:.2f}%**"
+        st.info(f"🧠 Model Confidence: **{confidence:.2f}%**")
