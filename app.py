@@ -46,7 +46,7 @@ if st.button("🔍 Predict Outage"):
             st.write(f"🌬️ Wind Speed: **{wind_speed} km/h**")
 
             # === Simulated Inputs ===
-            st.markdown("### 🧮 Additional Info (Simulated)")
+            st.markdown("### 🧮 Additional Info ")
             past_outages = st.slider("📊 Number of past outages (last 30 days)", 0, 10, 2)
             population_density = st.slider("👥 Population Density (people per sq km)", 100, 2000, 800)
 
