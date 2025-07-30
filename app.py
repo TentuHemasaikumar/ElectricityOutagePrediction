@@ -55,8 +55,8 @@ if st.button("🔍 Predict Outage"):
                                       columns=["Temperature", "Humidity", "Rainfall", "Wind Speed", "Past Outages", "Population Density"])
 
             # === Predict outage ===
-            prediction = model.predict(input_data)[0]
-            confidence = max(model.predict_proba(input_data)[0]) * 100
+            prediction = model.predict(input_data.values)[0]
+            confidence = max(model.predict_proba(input_data.values)[0]) * 100
 
             # === Show Result ===
             st.markdown("### 🔍 Prediction Result")
