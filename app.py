@@ -9,53 +9,51 @@ model = pickle.load(open('outage_model.pkl', 'rb'))
 # === Your OpenWeatherMap API Key ===
 API_KEY = "9ec898ed86ffafa9f14138eade261bf0"
 
+# === Streamlit App Config ===
 st.set_page_config(page_title="Electricity Outage Predictor", page_icon="⚡")
 st.title("⚡ Electricity Outage Prediction in Indian Towns")
 st.write("📍 Enter any Indian city, town or village to check power outage prediction based on live weather conditions.")
 
-# === User Input for Town ===
+# === User Input ===
 town = st.text_input("🏙️ Enter town / city / village name (India)", "")
-
-# === Input for past outages (not a slider) ===
-past_outages = st.number_input("📊 Enter number of past outages in last 30 days", min_value=0, max_value=30, step=1)
 
 # === Predict Button ===
 if st.button("🔍 Predict Outage"):
-    if town.strip() == "":
-        st.warning("⚠️ Please enter a town or city name.")
+    if not town.strip():
+        st.warning("⚠️ Please enter a valid town name.")
     else:
-        # === Build OpenWeatherMap API URL ===
+        # === Build API Request URL ===
         url = f"https://api.openweathermap.org/data/2.5/weather?q={town},IN&appid={API_KEY}&units=metric"
 
-        # === Fetch weather data ===
+        # === Make API Call ===
         response = requests.get(url)
         data = response.json()
 
         if data["cod"] != 200:
             st.error("❌ Town not found. Please check the spelling and try again.")
         else:
-            # === Extract weather data ===
+            # === Extract Weather Info ===
             temperature = data["main"]["temp"]
             humidity = data["main"]["humidity"]
             wind_speed = data["wind"]["speed"]
             rainfall = data.get("rain", {}).get("1h", 0)  # default to 0 if missing
 
-            # === Display weather data ===
+            # === Show Live Weather Info ===
             st.markdown("### 🌦️ Live Weather Info")
             st.write(f"🌡️ Temperature: **{temperature}°C**")
             st.write(f"💧 Humidity: **{humidity}%**")
             st.write(f"🌧️ Rainfall (last 1hr): **{rainfall} mm**")
             st.write(f"🌬️ Wind Speed: **{wind_speed} km/h**")
 
-            # === Prepare input for model ===
-            input_data = pd.DataFrame([[temperature, humidity, rainfall, wind_speed, past_outages]],
-                                      columns=["Temperature", "Humidity", "Rainfall", "Wind Speed", "Past Outages"])
+            # === Prepare Data for Model ===
+            input_data = pd.DataFrame([[temperature, humidity, rainfall, wind_speed]],
+                                      columns=["Temperature", "Humidity", "Rainfall", "Wind Speed"])
 
-            # === Predict outage ===
+            # === Make Prediction ===
             prediction = model.predict(input_data)[0]
             confidence = max(model.predict_proba(input_data)[0]) * 100
 
-            # === Display prediction ===
+            # === Show Prediction Result ===
             st.markdown("### 🔍 Prediction Result")
             if prediction == 1:
                 st.error("⚠️ Power Outage Expected")
@@ -63,7 +61,3 @@ if st.button("🔍 Predict Outage"):
                 st.success("✅ No Power Outage Expected")
 
             st.info(f"🧠 Model Confidence: **{confidence:.2f}%**")
-
-            # === Show Additional Info at Bottom ===
-            st.markdown("### 🧮 Additional Info (Simulated)")
-            st.write(f"📊 Number of past outages (last 30 days): **{past_outages}**")
